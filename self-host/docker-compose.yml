@@ -1,0 +1,16 @@
+# Self-hosted transcription for OpenType (optional, no account needed)
+services:
+  whisper:
+    # Any faster-whisper image exposing POST /v1/audio/transcriptions works.
+    image: ghcr.io/hwdsl2/docker-whisper:latest
+    ports:
+      - "9000:9000"
+    environment:
+      WHISPER_MODEL: base
+      WHISPER_LANGUAGE: auto
+    volumes:
+      - whisper-models:/var/lib/whisper
+    restart: unless-stopped
+
+volumes:
+  whisper-models:

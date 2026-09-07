@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">OpenType</string>
+    <string name="accessibility_service_description">OpenType uses Accessibility access only to detect focused text fields and insert your dictated text. It never reads screen content beyond the active text field, and never collects or shares personal data.</string>
+</resources>
