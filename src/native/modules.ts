@@ -26,6 +26,7 @@ interface DictationNativeModule {
   startRecording(): Promise<string>;
   stopRecording(): Promise<string>;
   cancelRecording(): Promise<void>;
+  setFrameStreaming(enabled: boolean): Promise<void>;
   getRecorderState(): Promise<RecorderState>;
   getInterruptedRecording(): Promise<string | null>;
   discardInterruptedRecording(): Promise<void>;
@@ -43,6 +44,8 @@ interface DictationNativeModule {
   setOnboardingComplete(): Promise<void>;
   syncSettingsSnapshot(json: string): Promise<void>;
   drainPendingHistory(): Promise<string[]>;
+  /** Best-effort foreground app package name. May return null on iOS or when permission is denied. */
+  getForegroundAppPackage(): Promise<string | null>;
 }
 
 const native = NativeModules.DictationModule as
@@ -119,6 +122,24 @@ export async function startRecording(): Promise<string> {
 
 export async function stopRecording(): Promise<string> {
   return requireNative().stopRecording();
+}
+
+/** Live 16 kHz mono PCM frames (base64) while recording. File kept in parallel. */
+export async function setFrameStreaming(enabled: boolean): Promise<void> {
+  if (!isNativeAvailable()) {
+    return;
+  }
+  await requireNative().setFrameStreaming(enabled);
+}
+
+/** Frames arrive ~5/sec as base64 PCM16 mono while streaming is on. */
+export function onAudioFrame(fn: (base64Pcm16: string) => void): () => void {
+  const sub = DeviceEventEmitter.addListener('AudioFrame', (data: unknown) => {
+    if (typeof data === 'string' && data.length > 0) {
+      fn(data);
+    }
+  });
+  return () => sub.remove();
 }
 
 export async function cancelRecording(): Promise<void> {
@@ -277,4 +298,18 @@ export async function drainPendingHistory(): Promise<string[]> {
     return [];
   }
   return requireNative().drainPendingHistory().catch(() => []);
+}
+
+/**
+ * Best-effort foreground app package name. Returns null when:
+ *   - Not on Android (iOS doesn't expose this)
+ *   - The native module isn't linked
+ *   - The AccessibilityService isn't enabled (Android requires it for foreground-app reads)
+ *   - The app just started (no event yet)
+ */
+export async function getForegroundAppPackage(): Promise<string | null> {
+  if (!isNativeAvailable()) {
+    return null;
+  }
+  return requireNative().getForegroundAppPackage().catch(() => null);
 }

@@ -14,6 +14,9 @@ function native(): {
     message: string,
     entryJson: string | null,
   ) => Promise<void>;
+  drainAudioFrames?: () => Promise<string[]>;
+  consumeDroppedFrames?: () => Promise<number>;
+  setQueueFrames?: (enabled: boolean) => Promise<void>;
 } | null {
   if (Platform.OS !== 'android') {
     return null;
@@ -26,6 +29,9 @@ function native(): {
       message: string,
       entryJson: string | null,
     ) => Promise<void>;
+    drainAudioFrames?: () => Promise<string[]>;
+    consumeDroppedFrames?: () => Promise<number>;
+    setQueueFrames?: (enabled: boolean) => Promise<void>;
   } | null;
 }
 
@@ -71,5 +77,30 @@ export async function reportDictationResult(
   } catch {
     // Panel is gone; the pending-history write already happened natively
     // only if reachable — nothing more we can do headlessly.
+  }
+}
+
+/** Queued PCM frames (base64) recorded by the bubble panel. Drains the queue. */
+export async function drainAudioFrames(): Promise<string[]> {
+  try {
+    const frames = await native()?.drainAudioFrames?.();
+    return Array.isArray(frames) ? frames.filter(f => typeof f === 'string') : [];
+  } catch {
+    return [];
+  } finally {
+    try {
+      await native()?.setQueueFrames?.(false);
+    } catch {
+      // Best effort; the panel also disables on cancel paths.
+    }
+  }
+}
+
+export async function consumeDroppedFrames(): Promise<number> {
+  try {
+    const n = await native()?.consumeDroppedFrames?.();
+    return typeof n === 'number' ? n : 0;
+  } catch {
+    return 0;
   }
 }

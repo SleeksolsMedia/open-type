@@ -1,0 +1,817 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenType Mobile Design System</title>
+<style>
+  :root{
+    --paper:#F4F1EA; --paper-2:#ECE7DC; --white:#FFFFFF;
+    --ink:#1A1714; --ink-700:#3A342D; --ink-500:#5C554B; --ink-300:#9A9184; --line:#D8D1C2;
+    --coral-600:#C43F1A; --coral:#E8552B; --coral-400:#F27A54; --coral-200:#F9C4B2; --coral-50:#FBEAE3;
+    --amber:#F2B705; --amber-600:#C99400; --amber-50:#FDF3D0;
+    --err:#D64524;
+    --mono: ui-monospace,"SF Mono","SFMono-Regular",Menlo,Consolas,monospace;
+    --sans: -apple-system,"Helvetica Neue","Segoe UI",sans-serif;
+    --r:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+  code{font-family:var(--mono)}
+
+  /* ---- section chrome ---- */
+  .sec{padding:60px 0;border-top:1px solid var(--line)}
+  .sec-head{margin-bottom:34px}
+  .sec-num{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--coral);font-weight:600}
+  .sec-title{font-size:clamp(24px,3.4vw,34px);font-weight:800;letter-spacing:-.02em;margin-top:6px}
+  .sec-sub{font-size:15.5px;color:var(--ink-500);max-width:680px;margin-top:8px;line-height:1.55}
+
+  /* ---- hero ---- */
+  .hero{padding:76px 0 60px;display:flex;gap:48px;align-items:center;flex-wrap:wrap}
+  .hero .txt{flex:1;min-width:300px}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-500)}
+  .hero h1{font-size:clamp(40px,6.5vw,80px);line-height:.94;letter-spacing:-.035em;font-weight:800;margin:18px 0 14px}
+  .hero h1 .t{color:var(--coral)}
+  .hero p{font-size:18px;color:var(--ink-500);max-width:520px}
+  .badge{display:inline-flex;gap:8px;align-items:center;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;background:var(--ink);color:var(--paper);padding:7px 13px;border-radius:99px;margin-top:22px}
+
+  /* ---- annotation callout (used everywhere for agent handoff) ---- */
+  .spec{border:1px solid var(--line);border-radius:14px;background:var(--white);padding:20px 22px;margin-top:16px}
+  .spec h5{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--coral-600);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .spec h5::before{content:"▸";color:var(--coral)}
+  .spec dl{display:grid;grid-template-columns:130px 1fr;gap:9px 18px;font-size:13.5px}
+  .spec dt{font-family:var(--mono);font-size:11.5px;color:var(--ink-500);padding-top:1px}
+  .spec dd{color:var(--ink-700);line-height:1.5}
+  .spec dd b{color:var(--ink)}
+  .kv{font-family:var(--mono);font-size:11px;background:var(--paper-2);padding:2px 6px;border-radius:5px;color:var(--ink-700)}
+
+  /* ---- phone frame ---- */
+  .phone{width:270px;height:552px;border-radius:40px;background:var(--ink);padding:11px;flex:none;
+    box-shadow:0 26px 60px rgba(26,23,20,.28);position:relative}
+  .phone .screen{width:100%;height:100%;border-radius:30px;overflow:hidden;position:relative;background:var(--paper)}
+  .phone .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:var(--ink);border-radius:0 0 16px 16px;z-index:40}
+  .statusbar{height:38px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 18px 5px;font-size:11px;font-weight:700;color:var(--ink)}
+  .statusbar.dk{color:#EDE7DC}
+
+  .row{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start}
+  .col{flex:1;min-width:280px}
+
+  /* ---- the ORB (bubble) ---- */
+  .orb{border-radius:50%;display:grid;place-items:center;position:relative;flex:none;
+    background:var(--ink);box-shadow:0 10px 26px rgba(26,23,20,.34)}
+  .orb .ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--coral);opacity:.0}
+  .orb.listening .ring{animation:ripple 1.6s ease-out infinite}
+  @keyframes ripple{0%{transform:scale(.9);opacity:.55}100%{transform:scale(1.5);opacity:0}}
+  .eq line{stroke-linecap:round;transform-box:fill-box;transform-origin:center}
+  .eq.live .b{animation:bounce 1s ease-in-out infinite}
+  .eq.live .b2{animation-delay:.12s}.eq.live .b3{animation-delay:.24s}.eq.live .b4{animation-delay:.12s}.eq.live .b5{animation-delay:0s}
+  @keyframes bounce{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+  .spark{animation:spin 2.4s linear infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .statecard{border:1px solid var(--line);border-radius:16px;background:var(--white);padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+  .statecard .nm{font-weight:700;font-size:15px}
+  .statecard .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:99px;font-weight:600}
+  .statecard .dsc{font-size:12.5px;color:var(--ink-500);line-height:1.5}
+  .grid-states{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+
+  /* gesture diagram */
+  .gest{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+  .gcard{border:1px solid var(--line);border-radius:14px;background:var(--white);padding:20px}
+  .gcard .gi{width:44px;height:44px;border-radius:12px;background:var(--coral-50);display:grid;place-items:center;margin-bottom:12px;font-size:20px}
+  .gcard h4{font-size:14.5px;font-weight:700;margin-bottom:5px}
+  .gcard p{font-size:13px;color:var(--ink-500);line-height:1.5}
+  .gcard .rn{font-family:var(--mono);font-size:10.5px;color:var(--coral-600);margin-top:9px;display:block}
+
+  /* tokens tables */
+  .tok{width:100%;border-collapse:collapse;font-size:13px;background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .tok th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-500);padding:11px 14px;background:var(--paper-2);border-bottom:1px solid var(--line)}
+  .tok td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-700)}
+  .tok tr:last-child td{border-bottom:none}
+  .tok code{font-size:11.5px;color:var(--coral-600)}
+  .tok .sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:7px;border:1px solid rgba(0,0,0,.1)}
+
+  /* transcript block */
+  .transcript{font-size:13.5px;line-height:1.6;text-align:left;width:100%}
+  .transcript .raw{color:var(--ink-300)}
+  .transcript .enh{background:linear-gradient(transparent 62%, var(--amber) 62%);color:var(--ink)}
+  .chiprow{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+  .chip{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:3px 8px;border-radius:99px;background:var(--amber-50);color:var(--amber-600);font-weight:600}
+
+  /* in-screen UI bits */
+  .kbd{position:absolute;left:0;right:0;bottom:0;background:var(--paper-2);border-top:1px solid var(--line);padding:8px 8px 14px}
+  .kbd .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 10px 10px}
+  .kbd .keys{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+  .kbd .keys span{height:24px;background:var(--white);border-radius:5px;box-shadow:0 1px 0 rgba(0,0,0,.12)}
+  .micbtn{width:34px;height:34px;border-radius:50%;background:var(--coral);display:grid;place-items:center;flex:none}
+
+  .list-note{padding:13px 15px;border-bottom:1px solid var(--line)}
+  .list-note .h{display:flex;justify-content:space-between;font-size:9px;color:var(--ink-300);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+  .list-note .b{font-size:12px;color:var(--ink-700);line-height:1.45}
+
+  .setting{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .setting .l{font-size:12.5px;font-weight:600}
+  .setting .s{font-size:10.5px;color:var(--ink-300);margin-top:2px}
+  .tgl{width:36px;height:21px;border-radius:99px;background:var(--coral);position:relative;flex:none}
+  .tgl::after{content:"";position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;top:2px;right:2px}
+  .tgl.off{background:var(--ink-300)}.tgl.off::after{right:auto;left:2px}
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:10px;font-family:var(--mono)}
+  .seg span{padding:5px 8px}.seg .on{background:var(--ink);color:var(--paper)}
+
+  .caption{font-family:var(--mono);font-size:11px;color:var(--ink-500);text-align:center;margin-top:14px;letter-spacing:.02em}
+
+  footer{padding:52px 0 92px;text-align:center;color:var(--ink-500);font-size:14px;border-top:1px solid var(--line)}
+  .toc{display:flex;gap:8px;flex-wrap:wrap;margin-top:26px}
+  .toc a{font-family:var(--mono);font-size:11.5px;text-decoration:none;color:var(--ink-700);border:1px solid var(--line);padding:6px 11px;border-radius:99px;background:var(--white)}
+  .toc a:hover{border-color:var(--coral);color:var(--coral-600)}
+
+  @media (max-width:840px){.spec dl{grid-template-columns:1fr}.spec dt{margin-top:6px}}
+  @media print{body{background:#fff}.sec{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="txt">
+      <div class="kicker">OpenType · Mobile Design System · React Native</div>
+      <h1>The orb that<br>turns talk<br>into <span class="t">type.</span></h1>
+      <p>A mobile-only design system built around one hero component — the floating Voicebar Orb — plus the screens and states an agent needs to ship it. Every element is annotated: what it is, where it lives, and how it reacts.</p>
+      <div class="badge">◆ Hand-off spec · read the ▸ boxes</div>
+      <div class="toc">
+        <a href="#logo">01 Logo</a>
+        <a href="#orb">02 Orb anatomy</a>
+        <a href="#states">03 States</a>
+        <a href="#gestures">04 Gestures</a>
+        <a href="#flow">05 Flow</a>
+        <a href="#screens">06 Screens</a>
+        <a href="#tokens">07 Tokens</a>
+        <a href="#components">08 Components</a>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen" style="background:linear-gradient(160deg,#26221d,#161310)">
+        <div class="statusbar dk"><span>9:41</span><span>◕ ⬤ ▮</span></div>
+        <!-- floating orb over a dark "host app" -->
+        <div style="position:absolute;bottom:118px;right:22px">
+          <div class="orb listening" style="width:66px;height:66px">
+            <div class="ring"></div>
+            <svg class="eq live" width="34" height="34" viewBox="0 0 100 100">
+              <g stroke="var(--coral)">
+                <line class="b b1" x1="26" y1="42" x2="26" y2="58" stroke-width="7" opacity=".5"/>
+                <line class="b b2" x1="38" y1="30" x2="38" y2="70" stroke-width="7" opacity=".75"/>
+                <line class="b b3" x1="50" y1="18" x2="50" y2="82" stroke-width="9"/>
+                <line class="b b4" x1="62" y1="30" x2="62" y2="70" stroke-width="7" opacity=".75"/>
+                <line class="b b5" x1="74" y1="42" x2="74" y2="58" stroke-width="7" opacity=".5"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:70px;left:0;right:0;text-align:center;color:#B8B0A2;font-family:var(--mono);font-size:10px;letter-spacing:.1em">HOLD TO SPEAK · floats over any app</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 LOGO & APP ICON -->
+  <section class="sec" id="logo">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <div class="sec-title">Logo &amp; where it shows up</div>
+      <div class="sec-sub">The Voicebar Caret is the app's face before anyone opens it — on the home screen, the store, the notification shade. The rule everywhere: coral tile, white mark, centered on a locked safe zone. It must survive being masked into a circle, a squircle, or a rounded square without ever clipping the bars.</div>
+    </div>
+
+    <!-- primary icons row -->
+    <div class="row" style="gap:26px;align-items:flex-start">
+      <div style="flex:none;text-align:center">
+        <div style="width:128px;height:128px;border-radius:28.5%;background:var(--coral);display:grid;place-items:center;box-shadow:0 14px 34px rgba(196,63,26,.32)">
+          <svg width="76" height="76" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#fff"><line x1="26" y1="42" x2="26" y2="58" stroke-width="7" opacity=".5"/><line x1="38" y1="30" x2="38" y2="70" stroke-width="7" opacity=".78"/><line x1="50" y1="18" x2="50" y2="82" stroke-width="9"/><line x1="62" y1="30" x2="62" y2="70" stroke-width="7" opacity=".78"/><line x1="74" y1="42" x2="74" y2="58" stroke-width="7" opacity=".5"/></g><line x1="42" y1="90" x2="58" y2="90" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".6"/></svg>
+        </div>
+        <div class="caption">iOS · superellipse mask</div>
+      </div>
+      <div style="flex:none;text-align:center">
+        <div style="width:128px;height:128px;border-radius:50%;background:var(--coral);display:grid;place-items:center;box-shadow:0 14px 34px rgba(196,63,26,.32)">
+          <svg width="72" height="72" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#fff"><line x1="30" y1="40" x2="30" y2="60" stroke-width="8" opacity=".55"/><line x1="40" y1="30" x2="40" y2="70" stroke-width="8" opacity=".8"/><line x1="50" y1="20" x2="50" y2="80" stroke-width="10"/><line x1="60" y1="30" x2="60" y2="70" stroke-width="8" opacity=".8"/><line x1="70" y1="40" x2="70" y2="60" stroke-width="8" opacity=".55"/></g></svg>
+        </div>
+        <div class="caption">Android adaptive · circle mask</div>
+      </div>
+      <div style="flex:none;text-align:center">
+        <div style="width:128px;height:128px;border-radius:22%;background:var(--coral);display:grid;place-items:center;box-shadow:0 14px 34px rgba(196,63,26,.32);position:relative">
+          <div style="position:absolute;inset:17%;border:1px dashed rgba(255,255,255,.5);border-radius:50%"></div>
+          <svg width="72" height="72" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#fff"><line x1="30" y1="40" x2="30" y2="60" stroke-width="8" opacity=".55"/><line x1="40" y1="30" x2="40" y2="70" stroke-width="8" opacity=".8"/><line x1="50" y1="20" x2="50" y2="80" stroke-width="10"/><line x1="60" y1="30" x2="60" y2="70" stroke-width="8" opacity=".8"/><line x1="70" y1="40" x2="70" y2="60" stroke-width="8" opacity=".55"/></g></svg>
+        </div>
+        <div class="caption">Adaptive safe zone (66%)</div>
+      </div>
+      <div class="col">
+        <div class="spec">
+          <h5>App icon — build spec</h5>
+          <dl>
+            <dt>Master</dt><dd><b>1024×1024</b> coral <span class="kv">#E8552B</span> tile, white 5-bar caret, mark ≈ 58% of canvas.</dd>
+            <dt>iOS</dt><dd>Ship a square master; iOS applies its own <b>superellipse</b> mask. No rounded corners baked in. Underline is optional at this size.</dd>
+            <dt>Android</dt><dd><b>Adaptive icon</b>: foreground = white mark, background = coral. Export both layers at 108dp; keep art inside the <b>66dp safe circle</b> so no mask clips the outer bars.</dd>
+            <dt>Drop the underline</dt><dd>The text-field underline is removed below ~180px — it turns to noise. Bars only from there down.</dd>
+            <dt>Never</dt><dd>No gradient tile, no photo background, no coral mark on white (contrast fails on light home screens).</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- placements grid -->
+    <div class="row" style="margin-top:30px;justify-content:center;gap:22px">
+
+      <!-- home screen -->
+      <div style="text-align:center">
+        <div class="phone" style="width:210px;height:430px">
+          <div class="notch" style="width:74px;height:20px"></div>
+          <div class="screen" style="background:linear-gradient(160deg,#3A342D,#1A1714)">
+            <div class="statusbar dk" style="font-size:9px"><span>9:41</span><span>◕ ⬤ ▮</span></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px 12px;padding:24px 18px">
+              <div><div style="height:42px;background:rgba(255,255,255,.16);border-radius:12px"></div></div>
+              <div><div style="height:42px;background:rgba(255,255,255,.16);border-radius:12px"></div></div>
+              <div><div style="height:42px;background:rgba(255,255,255,.16);border-radius:12px"></div></div>
+              <div><div style="height:42px;background:rgba(255,255,255,.16);border-radius:12px"></div></div>
+              <!-- our icon -->
+              <div style="text-align:center">
+                <div style="height:42px;background:var(--coral);border-radius:12px;display:grid;place-items:center"><svg width="26" height="26" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#fff"><line x1="34" y1="36" x2="34" y2="64" stroke-width="9" opacity=".7"/><line x1="50" y1="22" x2="50" y2="78" stroke-width="11"/><line x1="66" y1="36" x2="66" y2="64" stroke-width="9" opacity=".7"/></g></svg></div>
+                <div style="font-size:7px;color:#EDE7DC;margin-top:4px">OpenType</div>
+              </div>
+              <div><div style="height:42px;background:rgba(255,255,255,.16);border-radius:12px"></div></div>
+              <div><div style="height:42px;background:rgba(255,255,255,.16);border-radius:12px"></div></div>
+              <div><div style="height:42px;background:rgba(255,255,255,.16);border-radius:12px"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">Home screen · among other apps</div>
+      </div>
+
+      <!-- splash -->
+      <div style="text-align:center">
+        <div class="phone" style="width:210px;height:430px">
+          <div class="notch" style="width:74px;height:20px"></div>
+          <div class="screen" style="background:var(--paper);display:grid;place-items:center">
+            <div style="text-align:center">
+              <div style="width:74px;height:74px;border-radius:22%;background:var(--coral);display:grid;place-items:center;margin:0 auto 14px"><svg width="44" height="44" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#fff"><line x1="34" y1="36" x2="34" y2="64" stroke-width="9" opacity=".7"/><line x1="50" y1="22" x2="50" y2="78" stroke-width="11"/><line x1="66" y1="36" x2="66" y2="64" stroke-width="9" opacity=".7"/></g></svg></div>
+              <div style="font-weight:800;font-size:18px;letter-spacing:-.02em">Open<span style="color:var(--ink-500)">Type</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">Launch / splash screen</div>
+      </div>
+
+      <!-- notification -->
+      <div style="text-align:center">
+        <div class="phone" style="width:210px;height:430px">
+          <div class="notch" style="width:74px;height:20px"></div>
+          <div class="screen" style="background:linear-gradient(160deg,#3A342D,#1A1714)">
+            <div class="statusbar dk" style="font-size:9px"><span style="display:flex;gap:5px;align-items:center"><svg width="9" height="9" viewBox="0 0 100 100"><g stroke="#EDE7DC" stroke-linecap="round"><line x1="34" y1="36" x2="34" y2="64" stroke-width="12"/><line x1="50" y1="24" x2="50" y2="76" stroke-width="14"/><line x1="66" y1="36" x2="66" y2="64" stroke-width="12"/></g></svg> 9:41</span><span>◕ ⬤ ▮</span></div>
+            <div style="margin:40px 12px 0;background:rgba(255,255,255,.94);border-radius:14px;padding:12px;display:flex;gap:10px">
+              <div style="width:28px;height:28px;border-radius:8px;background:var(--coral);display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#fff"><line x1="50" y1="24" x2="50" y2="76" stroke-width="13"/><line x1="34" y1="38" x2="34" y2="62" stroke-width="11" opacity=".7"/><line x1="66" y1="38" x2="66" y2="62" stroke-width="11" opacity=".7"/></g></svg></div>
+              <div><div style="font-size:10px;font-weight:700">OpenType</div><div style="font-size:9px;color:var(--ink-500)">Note saved · tap to copy</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">Notification + status-bar (mono)</div>
+      </div>
+
+    </div>
+
+    <div class="spec">
+      <h5>Placement rules — every surface</h5>
+      <dl>
+        <dt>Home screen</dt><dd>Full-color coral tile. Reads against light and dark wallpapers alike — that's why the tile is coral, not white.</dd>
+        <dt>Splash</dt><dd>Icon + wordmark centered on paper (light) / ink (dark). No spinner — hand straight to the orb.</dd>
+        <dt>Status bar</dt><dd><b>Monochrome silhouette only</b> — Android tints it white/transparent. Ship a single-color mark asset (bars, no tile, no color).</dd>
+        <dt>Notification</dt><dd>Small colored icon (large icon slot) + mono small icon. "Note saved / tap to copy" pattern.</dd>
+        <dt>Themed icon</dt><dd>Android 13+ pulls a monochrome layer tinted to the user's wallpaper — supply a white-on-transparent mark.</dd>
+        <dt>Widget</dt><dd>Coral tile + one-tap "start dictation" — launches the orb straight into <i>listening</i>.</dd>
+        <dt>Store listing</dt><dd>1024 master for App Store / Play. Feature graphic uses the ink landing treatment with coral mark.</dd>
+        <dt>In-app header</dt><dd>Small orb + "OpenType" horizontal lockup, top-left of Home (already in the Screens section).</dd>
+        <dt>Clear space</dt><dd>Keep padding equal to one bar's height around any lockup. Never crop the mark to a single bar except at ≤16px.</dd>
+      </dl>
+    </div>
+
+    <!-- monochrome + widget + lockup strip -->
+    <div class="row" style="margin-top:24px">
+      <div class="col">
+        <div style="background:var(--ink);border-radius:14px;padding:26px;display:flex;gap:18px;justify-content:center;align-items:center">
+          <svg width="40" height="40" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#EDE7DC"><line x1="34" y1="38" x2="34" y2="62" stroke-width="9" opacity=".7"/><line x1="50" y1="24" x2="50" y2="76" stroke-width="11"/><line x1="66" y1="38" x2="66" y2="62" stroke-width="9" opacity=".7"/></g></svg>
+          <svg width="40" height="40" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="var(--coral-400)"><line x1="34" y1="38" x2="34" y2="62" stroke-width="9" opacity=".7"/><line x1="50" y1="24" x2="50" y2="76" stroke-width="11"/><line x1="66" y1="38" x2="66" y2="62" stroke-width="9" opacity=".7"/></g></svg>
+        </div>
+        <div class="caption">Monochrome / themed-icon mark</div>
+      </div>
+      <div class="col">
+        <div style="background:var(--paper-2);border-radius:14px;padding:20px;display:grid;place-items:center">
+          <div style="background:var(--white);border:1px solid var(--line);border-radius:16px;padding:16px;width:100%;max-width:220px;display:flex;gap:12px;align-items:center">
+            <div style="width:44px;height:44px;border-radius:12px;background:var(--coral);display:grid;place-items:center;flex:none"><svg width="26" height="26" viewBox="0 0 100 100"><g stroke-linecap="round" stroke="#fff"><line x1="34" y1="36" x2="34" y2="64" stroke-width="9" opacity=".7"/><line x1="50" y1="22" x2="50" y2="78" stroke-width="11"/><line x1="66" y1="36" x2="66" y2="64" stroke-width="9" opacity=".7"/></g></svg></div>
+            <div><div style="font-size:12px;font-weight:700">Start dictation</div><div style="font-size:10px;color:var(--ink-500)">OpenType widget</div></div>
+          </div>
+        </div>
+        <div class="caption">Home-screen widget</div>
+      </div>
+      <div class="col">
+        <div style="background:var(--coral);border-radius:14px;padding:26px;display:flex;justify-content:center;align-items:center">
+          <div style="font-weight:800;font-size:24px;letter-spacing:-.02em;color:#fff">Open<span style="color:#FBD9CC">Type</span></div>
+        </div>
+        <div class="caption">Wordmark on coral</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 ORB ANATOMY -->
+  <section class="sec" id="orb">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <div class="sec-title">The Voicebar Orb</div>
+      <div class="sec-sub">The single most important object in the app. It's a floating overlay bubble that lives on top of every other app (Android system overlay) and inside the custom keyboard (iOS). The mark from our identity — the equalizer caret — sits at its center and is what animates. Everything the user does starts and ends here.</div>
+    </div>
+
+    <div class="row">
+      <div style="flex:none">
+        <div style="background:var(--paper-2);border-radius:20px;padding:40px 50px;display:grid;place-items:center">
+          <div class="orb" style="width:120px;height:120px">
+            <svg class="eq" width="60" height="60" viewBox="0 0 100 100">
+              <g stroke="var(--coral)">
+                <line x1="26" y1="42" x2="26" y2="58" stroke-width="7" opacity=".5"/>
+                <line x1="38" y1="30" x2="38" y2="70" stroke-width="7" opacity=".75"/>
+                <line x1="50" y1="18" x2="50" y2="82" stroke-width="9"/>
+                <line x1="62" y1="30" x2="62" y2="70" stroke-width="7" opacity=".75"/>
+                <line x1="74" y1="42" x2="74" y2="58" stroke-width="7" opacity=".5"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div class="caption">100% size · ink surface, coral mark</div>
+      </div>
+      <div class="col">
+        <div class="spec">
+          <h5>Orb — build spec</h5>
+          <dl>
+            <dt>Component</dt><dd><b>&lt;VoicebarOrb /&gt;</b> — a draggable overlay rendered by a native Android overlay service, and inside the iOS keyboard extension.</dd>
+            <dt>Shape</dt><dd>Perfect circle. Ink surface <span class="kv">#1A1714</span>, coral equalizer mark centered. Drop shadow <span class="kv">y10 blur26 rgba(26,23,20,.34)</span>.</dd>
+            <dt>Base size</dt><dd><b>66&nbsp;dp</b> diameter at 100%. Mark is ~50% of diameter.</dd>
+            <dt>Size steps</dt><dd>User-set in Settings: <span class="kv">70%</span> <span class="kv">85% (default)</span> <span class="kv">100%</span> <span class="kv">115%</span>. Sliders snap to these only.</dd>
+            <dt>Opacity</dt><dd>Idle opacity user-set: <span class="kv">20/40/60/80(default)/100%</span>. Returns to 100% the instant it's touched or active.</dd>
+            <dt>Position</dt><dd>Free-drag, always <b>snaps to nearest left/right edge</b>. Remembers last position across sessions.</dd>
+            <dt>When visible</dt><dd>Only when a text field / on-screen keyboard is focused. Hidden in password, numeric, phone, and blocked (banking) fields.</dd>
+            <dt>Why an orb</dt><dd>It must read at a glance over any background, be thumb-reachable one-handed, and never look like part of the host app. The equalizer mark makes its purpose obvious the moment it moves.</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 STATES -->
+  <section class="sec" id="states">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <div class="sec-title">Orb states</div>
+      <div class="sec-sub">The orb is a small state machine. Each state has a distinct color, motion, and size so the user always knows what's happening without reading text. Coral = your voice. Amber = the LLM is rewriting. These are the exact visual targets for the agent.</div>
+    </div>
+
+    <div class="grid-states">
+      <!-- idle -->
+      <div class="statecard">
+        <span class="tag" style="background:var(--paper-2);color:var(--ink-500)">DEFAULT</span>
+        <div class="orb" style="width:58px;height:58px;opacity:.8">
+          <svg class="eq" width="28" height="28" viewBox="0 0 100 100"><g stroke="var(--coral)"><line x1="30" y1="38" x2="30" y2="62" stroke-width="9" opacity=".55"/><line x1="50" y1="24" x2="50" y2="76" stroke-width="11"/><line x1="70" y1="38" x2="70" y2="62" stroke-width="9" opacity=".55"/></g></svg>
+        </div>
+        <div class="nm">Idle</div>
+        <div class="dsc">Resting caret, 80% opacity. Waiting to be held or tapped.</div>
+      </div>
+      <!-- shrunk -->
+      <div class="statecard">
+        <span class="tag" style="background:var(--paper-2);color:var(--ink-500)">MINIMISED</span>
+        <div style="height:58px;display:grid;place-items:center">
+          <div class="orb" style="width:22px;height:22px;opacity:.7">
+            <svg width="10" height="10" viewBox="0 0 100 100"><line x1="50" y1="24" x2="50" y2="76" stroke="var(--coral)" stroke-width="16" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="nm">Shrunk to a dot</div>
+        <div class="dsc">After 5s idle (instant in search fields) it collapses to a dot. Tap restores + starts a dictation.</div>
+      </div>
+      <!-- listening -->
+      <div class="statecard">
+        <span class="tag" style="background:var(--coral-50);color:var(--coral-600)">RECORDING</span>
+        <div class="orb listening" style="width:58px;height:58px"><div class="ring"></div>
+          <svg class="eq live" width="28" height="28" viewBox="0 0 100 100"><g stroke="var(--coral)"><line class="b b1" x1="26" y1="42" x2="26" y2="58" stroke-width="7" opacity=".5"/><line class="b b2" x1="38" y1="30" x2="38" y2="70" stroke-width="7" opacity=".75"/><line class="b b3" x1="50" y1="18" x2="50" y2="82" stroke-width="9"/><line class="b b4" x1="62" y1="30" x2="62" y2="70" stroke-width="7" opacity=".75"/><line class="b b5" x1="74" y1="42" x2="74" y2="58" stroke-width="7" opacity=".5"/></g></svg>
+        </div>
+        <div class="nm">Listening</div>
+        <div class="dsc">Bars react to live mic amplitude; a coral ring pulses outward. Grows ~10%.</div>
+      </div>
+      <!-- enhancing -->
+      <div class="statecard">
+        <span class="tag" style="background:var(--amber-50);color:var(--amber-600)">LLM ENHANCE</span>
+        <div class="orb" style="width:58px;height:58px">
+          <svg width="30" height="30" viewBox="0 0 100 100"><path class="spark" d="M50 12 l4 22 22 4 -22 4 -4 22 -4 -22 -22 -4 22 -4z" fill="var(--amber)"/></svg>
+        </div>
+        <div class="nm">Enhancing</div>
+        <div class="dsc">Bars morph into a slow amber spark. Only when LLM enhance is on. Skipped otherwise.</div>
+      </div>
+      <!-- success -->
+      <div class="statecard">
+        <span class="tag" style="background:#E6F4EF;color:#0F8E7E">DONE</span>
+        <div class="orb" style="width:58px;height:58px;background:#0F8E7E">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="nm">Inserted</div>
+        <div class="dsc">Brief green check, then a copy button slides out beside it and auto-dismisses.</div>
+      </div>
+      <!-- error -->
+      <div class="statecard">
+        <span class="tag" style="background:#FBE7E1;color:var(--err)">PROBLEM</span>
+        <div class="orb" style="width:58px;height:58px;position:relative">
+          <svg class="eq" width="26" height="26" viewBox="0 0 100 100" style="opacity:.4"><g stroke="var(--coral)"><line x1="50" y1="24" x2="50" y2="76" stroke-width="11"/></g></svg>
+          <div style="position:absolute;top:-4px;right:-4px;width:22px;height:22px;background:var(--err);border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px">!</div>
+        </div>
+        <div class="nm">Error</div>
+        <div class="dsc">Orange badge. Tap opens a card: <i>"Couldn't transcribe — saved in app."</i> Retry / Dismiss.</div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h5>State machine — transitions</h5>
+      <dl>
+        <dt>idle → listening</dt><dd><b>Press-and-hold</b> (push-to-talk) or <b>single tap</b> (hands-free). Light haptic on entry. Ring pulse starts, size +10%.</dd>
+        <dt>listening → enhancing</dt><dd>On release (hold) or Done (hands-free). Medium haptic. If LLM enhance is OFF, skip straight to <i>inserted</i>.</dd>
+        <dt>enhancing → inserted</dt><dd>Text is placed at the cursor. Success haptic + green check for 600ms, then copy button appears for 4s and auto-dismisses.</dd>
+        <dt>any → error</dt><dd>On STT/LLM/network failure. Error haptic. Audio is retained so <i>Retry</i> can reuse it. Never lose the user's words.</dd>
+        <dt>idle → dot</dt><dd>After 5000ms of no interaction. Fades opacity + scales to 22dp. Reverses on tap.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 04 GESTURES -->
+  <section class="sec" id="gestures">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <div class="sec-title">Orb gestures</div>
+      <div class="sec-sub">The orb has no menu — everything is a gesture. This is what makes it feel native and out of the way. Implement with <code>react-native-gesture-handler</code> + <code>react-native-reanimated</code>; the timings below are the target feel.</div>
+    </div>
+    <div class="gest">
+      <div class="gcard">
+        <div class="gi">👆</div>
+        <h4>Hold to speak</h4>
+        <p>Press and hold the orb, talk, release to submit. The primary, most-used gesture — like a walkie-talkie.</p>
+        <span class="rn">LongPress · onBegin→record · onEnd→submit</span>
+      </div>
+      <div class="gcard">
+        <div class="gi">👉</div>
+        <h4>Tap for hands-free</h4>
+        <p>A single tap starts a hands-free session with floating <b>Cancel / Done</b> controls. Tap Done (or the orb) to finish.</p>
+        <span class="rn">Tap · toggles hands-free mode</span>
+      </div>
+      <div class="gcard">
+        <div class="gi">✋</div>
+        <h4>Drag to move</h4>
+        <p>Drag anywhere; the orb follows your finger, then <b>springs to the nearest side edge</b> and remembers it.</p>
+        <span class="rn">Pan · snapPoint(nearest edge) · spring</span>
+      </div>
+      <div class="gcard">
+        <div class="gi">🅩</div>
+        <h4>Drag to snooze</h4>
+        <p>Drag down to the <b>snooze zone</b> that appears at the bottom; drop to hide the orb for 10 minutes.</p>
+        <span class="rn">Pan → dropZone · hide 10min</span>
+      </div>
+      <div class="gcard">
+        <div class="gi">📳</div>
+        <h4>Shake to restore</h4>
+        <p>While snoozed, <b>shake the phone</b> to bring the orb back instantly. Cheap to reach, hard to trigger by accident.</p>
+        <span class="rn">Accelerometer threshold · un-snooze</span>
+      </div>
+      <div class="gcard">
+        <div class="gi">•</div>
+        <h4>Tap the dot</h4>
+        <p>When shrunk to a dot, one tap both <b>restores full size and starts a dictation</b> — no wasted step.</p>
+        <span class="rn">Tap(dot) · restore + record</span>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h5>Permissions the orb needs (Android)</h5>
+      <dl>
+        <dt>Overlay</dt><dd><b>"Display over other apps"</b> — required to float above other apps. Without it, no orb.</dd>
+        <dt>Accessibility</dt><dd>Accessibility Service — used to insert text into the focused field. If revoked, show a <b>repair state</b> that deep-links to settings.</dd>
+        <dt>Microphone</dt><dd>Runtime mic permission. Prompt from the main app (an overlay can't show the system dialog).</dd>
+        <dt>iOS note</dt><dd>iOS has no floating overlay — ship the orb's brain inside a <b>custom keyboard extension</b> with a mic button + waveform, needing <b>Full Access</b>.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 05 FLOW -->
+  <section class="sec" id="flow">
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <div class="sec-title">The one flow that matters</div>
+      <div class="sec-sub">Raw speech in → your STT model → optional LLM cleanup against your system prompt → clean text at the cursor. This is the whole product. Show the "cleaning up" chips so the user sees the value being added.</div>
+    </div>
+    <div class="grid-states" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">
+      <div class="statecard" style="align-items:flex-start;text-align:left">
+        <span class="tag" style="background:var(--coral-50);color:var(--coral-600)">01 · CAPTURE</span>
+        <div class="transcript raw">"um so basically i want to like send the report by friday okay the the friday one"</div>
+        <div class="dsc">Raw transcript from the user's chosen STT — local model, REST API, or WebSocket stream.</div>
+      </div>
+      <div class="statecard" style="align-items:flex-start;text-align:left">
+        <span class="tag" style="background:var(--amber-50);color:var(--amber-600)">02 · ENHANCE</span>
+        <div class="transcript"><span class="enh">LLM applies the user's system prompt.</span></div>
+        <div class="chiprow"><span class="chip">filler removed</span><span class="chip">repetition fixed</span><span class="chip">punctuation</span></div>
+        <div class="dsc">Optional. User's own LLM key + system prompt decide tone, format, cleanup rules.</div>
+      </div>
+      <div class="statecard" style="align-items:flex-start;text-align:left">
+        <span class="tag" style="background:var(--ink);color:var(--paper)">03 · INSERT</span>
+        <div class="transcript" style="color:var(--ink)">"I'll send the report by Friday."</div>
+        <div class="dsc">Clean text is typed into whatever field had focus — any app, any input.</div>
+      </div>
+    </div>
+    <div class="spec">
+      <h5>Modes the user configures (open-source core)</h5>
+      <dl>
+        <dt>STT source</dt><dd><b>Bring your own:</b> ① paste an API endpoint + key, ② connect a live WebSocket, or ③ download an on-device model for fully <b>offline</b> dictation.</dd>
+        <dt>LLM enhance</dt><dd>Optional toggle. When on, requires an LLM API key and a user-editable <b>system prompt</b>. When off, raw transcript is inserted (no amber state).</dd>
+        <dt>Privacy</dt><dd>Offline model = nothing leaves the phone. Make this visible and reassuring — it's the reason to choose OpenType over closed apps.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 06 SCREENS -->
+  <section class="sec" id="screens">
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <div class="sec-title">Core screens</div>
+      <div class="sec-sub">The app itself is small — the orb does the work. Four screens carry it: Home / Notes, the live dictation overlay, Settings (the open-source heart), and onboarding permissions. Rendered here in-frame.</div>
+    </div>
+
+    <div class="row" style="justify-content:center;gap:26px">
+      <!-- HOME / NOTES -->
+      <div>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>◕ ⬤ ▮</span></div>
+            <div style="padding:6px 16px 0">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+                <div class="orb" style="width:26px;height:26px"><svg width="13" height="13" viewBox="0 0 100 100"><g stroke="var(--coral)"><line x1="34" y1="34" x2="34" y2="66" stroke-width="9" opacity=".7"/><line x1="50" y1="20" x2="50" y2="80" stroke-width="11"/><line x1="66" y1="34" x2="66" y2="66" stroke-width="9" opacity=".7"/></g></svg></div>
+                <b style="font-size:17px;letter-spacing:-.02em">OpenType</b>
+              </div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--ink-300);letter-spacing:.1em;margin:14px 0 6px">TODAY</div>
+            </div>
+            <div class="list-note"><div class="h"><span>9:32 AM</span><span>offline · whisper-sm</span></div><div class="b">Can you let the team know the launch is slipping to Monday?</div></div>
+            <div class="list-note"><div class="h"><span>8:15 AM</span><span>enhanced</span></div><div class="b">Grocery list — oat milk, coffee, spinach, and pay the electricity bill.</div></div>
+            <div class="list-note"><div class="h"><span>YESTERDAY</span><span>raw</span></div><div class="b">Idea: add a widget that starts dictation from the lock screen.</div></div>
+            <!-- FAB orb -->
+            <div style="position:absolute;bottom:26px;right:22px">
+              <div class="orb" style="width:60px;height:60px"><svg class="eq" width="30" height="30" viewBox="0 0 100 100"><g stroke="var(--coral)"><line x1="30" y1="38" x2="30" y2="62" stroke-width="9" opacity=".55"/><line x1="50" y1="24" x2="50" y2="76" stroke-width="11"/><line x1="70" y1="38" x2="70" y2="62" stroke-width="9" opacity=".55"/></g></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">Home / Notes · dictations grouped by day</div>
+      </div>
+
+      <!-- LIVE OVERLAY -->
+      <div>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen" style="background:linear-gradient(160deg,#26221d,#161310)">
+            <div class="statusbar dk"><span>9:41</span><span>◕ ⬤ ▮</span></div>
+            <!-- fake host app chat -->
+            <div style="position:absolute;top:44px;left:0;right:0;bottom:0;opacity:.28">
+              <div style="margin:16px;height:34px;background:#4a443c;border-radius:10px"></div>
+              <div style="margin:16px;height:60px;background:#4a443c;border-radius:10px"></div>
+            </div>
+            <!-- live transcript sheet -->
+            <div style="position:absolute;left:14px;right:14px;bottom:96px;background:#26221d;border:1px solid #383129;border-radius:18px;padding:16px">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--coral-400);letter-spacing:.12em;margin-bottom:8px">● LISTENING · 0:07</div>
+              <div style="color:#EDE7DC;font-size:13px;line-height:1.5">Hey team, the launch is slipping to Monday, we're still waiting on legal…</div>
+            </div>
+            <!-- hands-free controls + orb -->
+            <div style="position:absolute;bottom:26px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:16px">
+              <div style="width:40px;height:40px;border-radius:50%;background:#332e27;display:grid;place-items:center;color:#B8B0A2;font-size:16px">✕</div>
+              <div class="orb listening" style="width:64px;height:64px"><div class="ring"></div><svg class="eq live" width="32" height="32" viewBox="0 0 100 100"><g stroke="var(--coral)"><line class="b b1" x1="26" y1="42" x2="26" y2="58" stroke-width="7" opacity=".5"/><line class="b b2" x1="38" y1="30" x2="38" y2="70" stroke-width="7" opacity=".75"/><line class="b b3" x1="50" y1="18" x2="50" y2="82" stroke-width="9"/><line class="b b4" x1="62" y1="30" x2="62" y2="70" stroke-width="7" opacity=".75"/><line class="b b5" x1="74" y1="42" x2="74" y2="58" stroke-width="7" opacity=".5"/></g></svg></div>
+              <div style="width:40px;height:40px;border-radius:50%;background:var(--coral);display:grid;place-items:center;color:#fff;font-size:16px">✓</div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">Hands-free session · Cancel / orb / Done</div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>◕ ⬤ ▮</span></div>
+            <div style="padding:8px 16px 4px"><b style="font-size:17px;letter-spacing:-.02em">Settings</b></div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--ink-300);letter-spacing:.1em;padding:12px 16px 6px">SPEECH-TO-TEXT</div>
+            <div class="setting"><div><div class="l">STT source</div><div class="s">Bring your own model</div></div><div class="seg"><span class="on">Offline</span><span>API</span><span>WS</span></div></div>
+            <div class="setting"><div><div class="l">On-device model</div><div class="s">whisper-small · 465 MB · downloaded</div></div><div class="tgl"></div></div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--ink-300);letter-spacing:.1em;padding:12px 16px 6px">LLM ENHANCE</div>
+            <div class="setting"><div><div class="l">Enhance with LLM</div><div class="s">Cleans up filler, punctuation, tone</div></div><div class="tgl"></div></div>
+            <div class="setting"><div><div class="l">System prompt</div><div class="s">"Make it concise and professional…"</div></div><span style="color:var(--ink-300)">›</span></div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--ink-300);letter-spacing:.1em;padding:12px 16px 6px">ORB</div>
+            <div class="setting"><div><div class="l">Bubble size</div></div><div class="seg"><span>70</span><span class="on">85</span><span>100</span><span>115</span></div></div>
+            <div class="setting"><div><div class="l">Shrink when idle</div></div><div class="tgl"></div></div>
+          </div>
+        </div>
+        <div class="caption">Settings · the open-source heart</div>
+      </div>
+
+      <!-- ONBOARDING / PERMISSIONS -->
+      <div>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>◕ ⬤ ▮</span></div>
+            <div style="padding:34px 22px 0;text-align:center">
+              <div class="orb" style="width:72px;height:72px;margin:0 auto 22px"><svg class="eq live" width="36" height="36" viewBox="0 0 100 100"><g stroke="var(--coral)"><line class="b b1" x1="26" y1="42" x2="26" y2="58" stroke-width="7" opacity=".5"/><line class="b b2" x1="38" y1="30" x2="38" y2="70" stroke-width="7" opacity=".75"/><line class="b b3" x1="50" y1="18" x2="50" y2="82" stroke-width="9"/><line class="b b4" x1="62" y1="30" x2="62" y2="70" stroke-width="7" opacity=".75"/><line class="b b5" x1="74" y1="42" x2="74" y2="58" stroke-width="7" opacity=".5"/></g></svg></div>
+              <div style="font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Three quick<br>permissions</div>
+              <p style="font-size:12px;color:var(--ink-500);margin:10px 0 20px">The orb needs these to float and type for you.</p>
+            </div>
+            <div class="setting" style="margin:0 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px"><div><div class="l">Display over apps</div><div class="s">So the orb can float</div></div><div class="tgl"></div></div>
+            <div class="setting" style="margin:0 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px"><div><div class="l">Accessibility</div><div class="s">So it can insert text</div></div><div class="tgl off"></div></div>
+            <div class="setting" style="margin:0 16px;border:1px solid var(--line);border-radius:12px"><div><div class="l">Microphone</div><div class="s">So it can hear you</div></div><div class="tgl"></div></div>
+            <div style="position:absolute;bottom:22px;left:16px;right:16px"><div style="background:var(--coral);color:#fff;text-align:center;padding:13px;border-radius:12px;font-weight:700;font-size:14px">Continue</div></div>
+          </div>
+        </div>
+        <div class="caption">Onboarding · permission repair states reuse this</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 TOKENS -->
+  <section class="sec" id="tokens">
+    <div class="sec-head">
+      <span class="sec-num">07</span>
+      <div class="sec-title">Design tokens</div>
+      <div class="sec-sub">Drop these straight into the RN theme. Motion and haptics are part of the brand here — the orb <i>feels</i> like a physical thing, so springs beat linear tweens everywhere.</div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <table class="tok">
+          <tr><th>Color</th><th>Token</th><th>Hex / use</th></tr>
+          <tr><td><span class="sw" style="background:var(--coral)"></span>Coral</td><td><code>brand.voice</code></td><td>#E8552B · listening, primary</td></tr>
+          <tr><td><span class="sw" style="background:var(--amber)"></span>Amber</td><td><code>brand.ai</code></td><td>#F2B705 · LLM enhance only</td></tr>
+          <tr><td><span class="sw" style="background:var(--ink)"></span>Ink</td><td><code>surface.orb</code></td><td>#1A1714 · orb, text</td></tr>
+          <tr><td><span class="sw" style="background:#0F8E7E"></span>Green</td><td><code>state.done</code></td><td>#0F8E7E · success check</td></tr>
+          <tr><td><span class="sw" style="background:var(--err)"></span>Red</td><td><code>state.error</code></td><td>#D64524 · error badge</td></tr>
+          <tr><td><span class="sw" style="background:var(--paper)"></span>Paper</td><td><code>surface.bg</code></td><td>#F4F1EA · app background</td></tr>
+        </table>
+      </div>
+      <div class="col">
+        <table class="tok">
+          <tr><th>Motion</th><th>Spring / timing</th><th>Where</th></tr>
+          <tr><td>Orb snap</td><td><code>damping 15, stiffness 180</code></td><td>edge snapping after drag</td></tr>
+          <tr><td>Grow on record</td><td><code>scale 1→1.1, 180ms</code></td><td>idle → listening</td></tr>
+          <tr><td>Ring pulse</td><td><code>1.6s ease-out loop</code></td><td>listening ripple</td></tr>
+          <tr><td>Shrink to dot</td><td><code>after 5000ms · 220ms</code></td><td>idle timeout</td></tr>
+          <tr><td>Bar bounce</td><td><code>amplitude-driven</code></td><td>maps mic dB → scaleY</td></tr>
+          <tr><td>Copy dismiss</td><td><code>show 4000ms</code></td><td>after insert</td></tr>
+        </table>
+        <table class="tok" style="margin-top:16px">
+          <tr><th>Haptic</th><th>Type</th><th>Trigger</th></tr>
+          <tr><td>Start</td><td><code>impactLight</code></td><td>record begins</td></tr>
+          <tr><td>Submit</td><td><code>impactMedium</code></td><td>record ends</td></tr>
+          <tr><td>Done</td><td><code>notificationSuccess</code></td><td>text inserted</td></tr>
+          <tr><td>Error</td><td><code>notificationError</code></td><td>failure</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h5>Type &amp; spacing</h5>
+      <dl>
+        <dt>Display</dt><dd>System bold (SF Pro / Roboto), <b>-2% tracking</b>, weight 800. Screen titles &amp; onboarding.</dd>
+        <dt>Body</dt><dd>System regular, 15/1.5. Notes &amp; settings labels.</dd>
+        <dt>Mono</dt><dd>SF Mono / Roboto Mono for metadata, model names, timers, config — the developer texture.</dd>
+        <dt>Radius</dt><dd>Cards <span class="kv">16dp</span> · sheets <span class="kv">18dp</span> · orb <span class="kv">circle</span> · pills <span class="kv">999</span>.</dd>
+        <dt>Spacing</dt><dd>4dp base grid. Screen padding 16dp. Orb edge inset 22dp.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 08 COMPONENTS -->
+  <section class="sec" id="components">
+    <div class="sec-head">
+      <span class="sec-num">08</span>
+      <div class="sec-title">Supporting components</div>
+      <div class="sec-sub">The small pieces the orb hands off to. Each is annotated with where it appears and how it behaves.</div>
+    </div>
+
+    <div class="row">
+      <!-- copy button -->
+      <div class="col">
+        <div style="background:var(--paper-2);border-radius:14px;padding:26px;display:flex;justify-content:center;gap:12px;align-items:center">
+          <div class="orb" style="width:52px;height:52px;background:#0F8E7E"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div style="background:var(--white);border:1px solid var(--line);border-radius:99px;padding:9px 16px;font-size:13px;font-weight:600;display:flex;gap:7px;align-items:center">⧉ Copy</div>
+        </div>
+        <div class="spec">
+          <h5>Copy button</h5>
+          <dl>
+            <dt>Where</dt><dd>Slides out beside the orb right after <i>inserted</i>.</dd>
+            <dt>Behavior</dt><dd>Auto-dismisses after 4s. Fallback path when direct text insertion fails.</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- error card -->
+      <div class="col">
+        <div style="background:var(--paper-2);border-radius:14px;padding:22px;display:grid;place-items:center">
+          <div style="background:var(--white);border:1px solid var(--line);border-radius:14px;padding:16px;width:100%;max-width:250px">
+            <div style="display:flex;gap:9px;align-items:center;margin-bottom:8px"><div style="width:20px;height:20px;background:var(--err);border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px">!</div><b style="font-size:13.5px">Couldn't transcribe</b></div>
+            <p style="font-size:12px;color:var(--ink-500);margin-bottom:12px">Your words are saved in the app. Check your connection.</p>
+            <div style="display:flex;gap:8px"><div style="flex:1;background:var(--coral);color:#fff;text-align:center;padding:8px;border-radius:9px;font-size:12.5px;font-weight:700">Retry</div><div style="flex:1;border:1px solid var(--line);text-align:center;padding:8px;border-radius:9px;font-size:12.5px;font-weight:600">Dismiss</div></div>
+          </div>
+        </div>
+        <div class="spec">
+          <h5>Error card</h5>
+          <dl>
+            <dt>Where</dt><dd>Opens on tapping the orb's error badge.</dd>
+            <dt>Behavior</dt><dd>Retry reuses retained audio; Dismiss clears. Never discards the recording.</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- snooze zone -->
+      <div class="col">
+        <div style="background:linear-gradient(160deg,#26221d,#161310);border-radius:14px;padding:26px;display:grid;place-items:center;position:relative;min-height:150px">
+          <div class="orb" style="width:46px;height:46px;position:absolute;top:24px;opacity:.9"><svg width="22" height="22" viewBox="0 0 100 100"><g stroke="var(--coral)"><line x1="50" y1="24" x2="50" y2="76" stroke-width="12" stroke-linecap="round"/></g></svg></div>
+          <div style="border:2px dashed #4a443c;border-radius:50%;width:64px;height:64px;display:grid;place-items:center;color:#B8B0A2;font-weight:800;position:absolute;bottom:20px">Z</div>
+        </div>
+        <div class="spec">
+          <h5>Snooze zone</h5>
+          <dl>
+            <dt>Where</dt><dd>Fades in at bottom-center only while dragging the orb.</dd>
+            <dt>Behavior</dt><dd>Drop to hide 10 min. Shake phone to restore. Magnetic pull when near.</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <!-- iOS keyboard -->
+      <div class="col">
+        <div style="background:var(--paper-2);border-radius:14px;padding:20px">
+          <div style="background:var(--white);border-radius:12px;overflow:hidden;border:1px solid var(--line)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--line)">
+              <span style="font-family:var(--mono);font-size:9px;color:var(--coral-600)">● 0:04 · listening</span>
+              <div class="micbtn"><svg class="eq live" width="16" height="16" viewBox="0 0 100 100"><g stroke="#fff"><line class="b b2" x1="35" y1="34" x2="35" y2="66" stroke-width="10"/><line class="b b3" x1="50" y1="22" x2="50" y2="78" stroke-width="12"/><line class="b b4" x1="65" y1="34" x2="65" y2="66" stroke-width="10"/></g></svg></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:3px;padding:8px">
+              <span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span><span style="height:20px;background:var(--paper-2);border-radius:4px"></span>
+            </div>
+          </div>
+        </div>
+        <div class="spec">
+          <h5>iOS keyboard bar</h5>
+          <dl>
+            <dt>Where</dt><dd>The iOS equivalent of the orb — a keyboard extension.</dd>
+            <dt>Behavior</dt><dd>Mic button = orb states. Top bar shows timer + errors. Respects Reduce Motion (static indicator).</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- toast -->
+      <div class="col">
+        <div style="background:var(--paper-2);border-radius:14px;padding:26px;display:grid;place-items:center">
+          <div style="background:var(--ink);color:var(--paper);border-radius:10px;padding:11px 16px;font-size:12.5px">Failed to transcribe · saved in app</div>
+        </div>
+        <div class="spec">
+          <h5>Toast</h5>
+          <dl>
+            <dt>Where</dt><dd>Bottom, above the orb. Non-blocking status.</dd>
+            <dt>Behavior</dt><dd>3s auto-dismiss. Ink surface, paper text. Used for soft failures + snooze confirmations.</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- repair state -->
+      <div class="col">
+        <div style="background:var(--paper-2);border-radius:14px;padding:22px;display:grid;place-items:center">
+          <div style="background:var(--white);border:1px solid var(--err);border-radius:12px;padding:14px;width:100%;max-width:230px;text-align:center">
+            <div style="font-size:22px;margin-bottom:6px">⚠️</div>
+            <b style="font-size:13px">Accessibility turned off</b>
+            <p style="font-size:11.5px;color:var(--ink-500);margin:6px 0 10px">The orb can't type until you re-enable it.</p>
+            <div style="background:var(--ink);color:#fff;padding:8px;border-radius:9px;font-size:12px;font-weight:700">Fix in Settings</div>
+          </div>
+        </div>
+        <div class="spec">
+          <h5>Repair state</h5>
+          <dl>
+            <dt>Where</dt><dd>Replaces the orb when a required permission is revoked.</dd>
+            <dt>Behavior</dt><dd>Deep-links to the exact settings page. Orb won't function until fixed.</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>OpenType mobile design system · built from Concept A. Every ▸ box is an implementation note for your agent. All marks are SVG — resolution-independent and ready to port to <code>react-native-svg</code>.</p>
+  </footer>
+
+</div>
+</body>
+</html>

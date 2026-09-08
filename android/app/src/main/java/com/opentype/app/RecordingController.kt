@@ -37,11 +37,18 @@ object RecordingController {
     fun onAutoStop(path: String)
   }
 
+  /** Live PCM frames for streaming transcription. Null = file-only mode. */
+  interface FrameListener {
+    fun onFrame(base64Pcm16Mono: String)
+  }
+
   private const val SAMPLE_RATE = 16000
   const val MAX_RECORD_MS = 10 * 60 * 1000L
   private const val MIN_RECORD_MS = 500L
   private const val MIN_FRAMES = SAMPLE_RATE / 2
   private const val PENDING_NAME = "pending-recording.json"
+  /** 200 ms of 16-bit mono PCM per emitted frame. */
+  private const val FRAME_BYTES = 3200 * 2
 
   private val lock = Any()
   private var audioRecord: AudioRecord? = null
@@ -51,6 +58,8 @@ object RecordingController {
   @Volatile private var capturing = false
   @Volatile private var wantsSave = false
   @Volatile private var lastAmplitude = 0f
+  @Volatile private var frameListener: FrameListener? = null
+  private var frameBuf = ByteArray(0)
 
   private var file: File? = null
   private var startMs = 0L
@@ -168,7 +177,6 @@ object RecordingController {
     } catch (_: InterruptedException) {
     }
   }
-
   fun getState(): RecorderState {
     synchronized(lock) {
       return RecorderState(
@@ -177,6 +185,56 @@ object RecordingController {
         durationMs = if (startMs == 0L) 0L else SystemClock.elapsedRealtime() - startMs,
         sizeBytes = frames * 2 + 44,
       )
+    }
+  }
+
+  /**
+   * Enable/disable live PCM frame emission. Frames flow only while a
+   * recording is active; the WAV file is always written in parallel so
+   * HTTP fallback never needs a re-record.
+   */
+  fun setFrameListener(l: FrameListener?) {
+    frameListener = l
+    if (l == null) {
+      synchronized(lock) {
+        frameBuf = ByteArray(0)
+      }
+    }
+  }
+
+  /**
+   * Bounded frame queue for headless consumers (bubble live flow), which
+   * cannot receive live device events. Drained via [drainQueuedFrames];
+   * oldest frames drop past the cap and are counted.
+   */
+  private const val MAX_QUEUE_FRAMES = 3200 // ~10 min at 5 frames/s
+  private var queueFrames = false
+  private val frameQueue: ArrayDeque<String> = ArrayDeque()
+  private var queuedDropped = 0
+
+  fun setQueueFrames(enabled: Boolean) {
+    synchronized(lock) {
+      queueFrames = enabled
+      frameQueue.clear()
+      queuedDropped = 0
+    }
+  }
+
+  /** Returns queued frames and clears the queue. */
+  fun drainQueuedFrames(): List<String> {
+    synchronized(lock) {
+      val out = frameQueue.toList()
+      frameQueue.clear()
+      return out
+    }
+  }
+
+  /** Dropped-frame count since last call (resets). >0 means audio was lost. */
+  fun consumeDroppedFrames(): Int {
+    synchronized(lock) {
+      val n = queuedDropped
+      queuedDropped = 0
+      return n
     }
   }
 
@@ -240,6 +298,58 @@ object RecordingController {
 
   // ---- internals -----------------------------------------------------------
 
+  /** Accumulate raw PCM and emit 200 ms base64 frames when streaming. */
+  private fun emitFrames(pcmBytes: ByteArray) {
+    val l = frameListener
+    val queue: Boolean
+    synchronized(lock) {
+      queue = queueFrames
+    }
+    if (l == null && !queue) {
+      return
+    }
+    try {
+      val combined: ByteArray
+      synchronized(lock) {
+        combined = frameBuf + pcmBytes
+        frameBuf = ByteArray(0)
+      }
+      var offset = 0
+      var rest = combined
+      while (rest.size - offset >= FRAME_BYTES) {
+        val chunk = rest.copyOfRange(offset, offset + FRAME_BYTES)
+        offset += FRAME_BYTES
+        val b64 = android.util.Base64.encodeToString(chunk, android.util.Base64.NO_WRAP)
+        try {
+          l?.onFrame(b64)
+        } catch (_: Exception) {
+        }
+        if (queue) {
+          synchronized(lock) {
+            if (queueFrames) {
+              frameQueue.addLast(b64)
+              while (frameQueue.size > MAX_QUEUE_FRAMES) {
+                frameQueue.removeFirst()
+                queuedDropped++
+              }
+            }
+          }
+        }
+      }
+      if (offset > 0) {
+        synchronized(lock) {
+          frameBuf = rest.copyOfRange(offset, rest.size)
+        }
+      } else {
+        synchronized(lock) {
+          frameBuf = combined
+        }
+      }
+    } catch (_: Exception) {
+      // Frame emission must never break recording.
+    }
+  }
+
   private fun captureLoop() {
     val rec: AudioRecord?
     val out: BufferedOutputStream?
@@ -284,6 +394,7 @@ object RecordingController {
           finish(timedOut = false)
           return
         }
+        emitFrames(bytes)
         synchronized(lock) {
           frames += n
           lastAmplitude = (peak / 32768f).coerceIn(0f, 1f)
@@ -350,6 +461,7 @@ object RecordingController {
       file = null
       cb = listener
       listener = null
+      frameBuf = ByteArray(0)
     }
     // Service/marker cleanup needs a context: the owner stops it.
     // Best-effort here is impossible without context, so owners call

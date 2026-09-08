@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, type AppSettings, type HistoryEntry } from '../types';
+import { DEFAULT_SETTINGS, type AppSettings, type HistoryEntry, type SttConfig } from '../types';
 
 const SETTINGS_KEY = 'opentype.settings.v1';
 const HISTORY_KEY = 'opentype.history.v1';
@@ -31,10 +31,15 @@ function mergeSettings(raw: unknown): AppSettings {
     return DEFAULT_SETTINGS;
   }
   const parsed = raw as Partial<AppSettings>;
+  const parsedStt = (parsed.stt ?? {}) as Partial<SttConfig>;
   return {
     ...DEFAULT_SETTINGS,
     ...parsed,
-    stt: { ...DEFAULT_SETTINGS.stt, ...(parsed.stt ?? {}) },
+    stt: {
+      ...DEFAULT_SETTINGS.stt,
+      ...parsedStt,
+      live: {...DEFAULT_SETTINGS.stt.live, ...(parsedStt.live ?? {})},
+    },
     llm: { ...DEFAULT_SETTINGS.llm, ...(parsed.llm ?? {}) },
     onboarding: { ...DEFAULT_SETTINGS.onboarding, ...(parsed.onboarding ?? {}) },
   };

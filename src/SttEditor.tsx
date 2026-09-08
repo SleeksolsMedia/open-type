@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Switch, Text, View} from 'react-native';
+import {LiveEditor} from './LiveEditor';
 import {ModelList} from './ModelRow';
 import {
   KindToggle,
@@ -11,7 +12,7 @@ import {isModelsUnsupported, listModels} from './net';
 import {isModelDownloaded} from './providers/models';
 import {STT_PRESETS, type SttConfig} from './types';
 import {Banner, Btn, Field, Row} from './ui';
-import {useTheme} from './theme';
+import {fonts, useTheme} from './theme';
 import {testStt} from './testConnection';
 
 type Conn =
@@ -44,8 +45,10 @@ export function SttEditor({
   const abort = useRef<AbortController | null>(null);
 
   // Server identity: any change here invalidates the connection test.
+  // Live mode owns its own verification (see LiveEditor).
   const signature = JSON.stringify([
     stt.kind,
+    stt.mode,
     stt.preset,
     stt.baseUrl,
     stt.apiKey,
@@ -56,7 +59,9 @@ export function SttEditor({
   useEffect(() => {
     setConn({kind: 'idle'});
     setSample(null);
-    onVerifiedChange?.(false);
+    if (!(stt.kind === 'openai-compatible' && stt.mode === 'live')) {
+      onVerifiedChange?.(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature]);
 
@@ -69,13 +74,15 @@ export function SttEditor({
     onVerifiedChange?.(ok);
   };
 
-  // Re-verify a previously downloaded model when returning to this screen.
+  // Re-verify whenever the on-device selection changes (including the
+  // auto-select that fires when a download finishes) and when returning
+  // to this screen with a previously downloaded model.
   useEffect(() => {
     if (stt.kind === 'on-device') {
       verifyOnDevice(stt.onDeviceModelId || 'tiny.en');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [stt.kind, stt.onDeviceModelId]);
 
   const set = (patch: Partial<SttConfig>) => onChange({...stt, ...patch});
 
@@ -169,7 +176,31 @@ export function SttEditor({
         }}
       />
 
+      {stt.kind === 'openai-compatible' && (
+        <Row>
+          <Btn
+            title="Upload"
+            icon="download"
+            kind={stt.mode !== 'live' ? 'primary' : 'ghost'}
+            onPress={() => set({mode: 'upload'})}
+          />
+          <Btn
+            title="Live"
+            icon="wave"
+            kind={stt.mode === 'live' ? 'primary' : 'ghost'}
+            onPress={() => set({mode: 'live'})}
+          />
+        </Row>
+      )}
+
       {stt.kind === 'openai-compatible' ? (
+        stt.mode === 'live' ? (
+          <LiveEditor
+            live={stt.live}
+            onChange={live => set({live})}
+            onVerifiedChange={onVerifiedChange}
+          />
+        ) : (
         <View>
           <PresetGrid
             items={STT_PRESETS}
@@ -202,7 +233,7 @@ export function SttEditor({
                 alignItems: 'center',
                 marginVertical: 6,
               }}>
-              <Text style={{color: t.text}}>Server needs an API key</Text>
+            <Text style={{color: t.text, fontFamily: fonts.bodySemiBold}}>Server needs an API key</Text>
               <Switch value={keyRequired} onValueChange={setKeyRequired} />
             </View>
           )}
@@ -298,6 +329,7 @@ export function SttEditor({
             />
           )}
         </View>
+        )
       ) : (
         <OnDeviceSection
           modelId={stt.onDeviceModelId || 'tiny.en'}

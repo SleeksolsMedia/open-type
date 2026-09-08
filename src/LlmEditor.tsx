@@ -9,7 +9,7 @@ import {isModelsUnsupported, listModels} from './net';
 import {testLlm} from './testConnection';
 import {LLM_PRESETS, type LlmConfig} from './types';
 import {Banner, Btn, Field, Row} from './ui';
-import {useTheme} from './theme';
+import {fonts, useTheme} from './theme';
 
 type Conn =
   | {kind: 'idle'}
@@ -135,7 +135,7 @@ export function LlmEditor({
           alignItems: 'center',
           marginVertical: 8,
         }}>
-        <Text style={{color: t.text, fontWeight: '700', fontSize: 15}}>
+        <Text style={{color: t.text, fontFamily: fonts.bodySemiBold, fontSize: 15}}>
           Polish transcripts with an LLM
         </Text>
         <Switch value={llm.enabled} onValueChange={v => set({enabled: v})} />

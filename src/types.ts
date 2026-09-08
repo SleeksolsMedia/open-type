@@ -2,6 +2,8 @@
  * Shared domain types for OpenType dictation.
  */
 
+import type {LiveConfig} from './stream/types';
+
 export type SttProviderKind = 'openai-compatible' | 'on-device';
 
 /** One-tap server presets. 'custom' = user-typed URL. */
@@ -54,6 +56,9 @@ export const STT_PRESETS: SttPreset[] = [
 export interface SttConfig {
   kind: SttProviderKind;
   preset: SttPresetId;
+  /** Upload posts the finished file; live streams over WebSocket. */
+  mode: 'upload' | 'live';
+  live: LiveConfig;
   /** e.g. https://api.openai.com/v1 or http://<host>:9000/v1 for self-hosted faster-whisper */
   baseUrl?: string;
   apiKey?: string;
@@ -125,6 +130,10 @@ export interface AppSettings {
   enhanceByDefault: boolean;
   bubbleSize: number;
   bubbleOpacity: number;
+  /** 'system' follows OS, 'light' / 'dark' override. */
+  themeMode: 'system' | 'light' | 'dark';
+  /** Master toggle for Vibration.vibrate calls. */
+  hapticsEnabled: boolean;
 }
 
 export interface DictationResult {
@@ -133,6 +142,12 @@ export interface DictationResult {
   usedEnhance: boolean;
   /** True when enhance was requested but skipped (offline / server down). */
   enhanceSkipped?: boolean;
+  /** True when transcribed over a live WebSocket session. */
+  live?: boolean;
+  /** True when live failed and the HTTP upload fallback produced this. */
+  liveFallback?: boolean;
+  /** Android package name of the app the user was dictating into. */
+  sourceApp?: string;
 }
 
 export interface HistoryEntry {
@@ -145,6 +160,10 @@ export interface HistoryEntry {
   /** Seconds of audio, for display. */
   durationSec?: number;
   enhanceSkipped?: boolean;
+  live?: boolean;
+  liveFallback?: boolean;
+  /** Android package name of the app the user was dictating into. */
+  sourceApp?: string;
 }
 
 /** Downloadable whisper.cpp model. */
@@ -168,6 +187,17 @@ export const DEFAULT_SETTINGS: AppSettings = {
   stt: {
     kind: 'openai-compatible',
     preset: 'openai',
+    mode: 'upload',
+    live: {
+      provider: 'deepgram',
+      apiKey: '',
+      model: '',
+      language: '',
+      host: '',
+      port: 9090,
+      tls: false,
+      fallbackToUpload: true,
+    },
     baseUrl: 'https://api.openai.com/v1',
     apiKey: '',
     model: 'whisper-1',
@@ -186,4 +216,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   enhanceByDefault: false,
   bubbleSize: 100,
   bubbleOpacity: 80,
+  themeMode: 'system',
+  hapticsEnabled: true,
 };

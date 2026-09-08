@@ -1,9 +1,11 @@
 import {transcribeWithOpenAICompatible} from '../src/providers/stt';
-import type {SttConfig} from '../src/types';
+import {DEFAULT_SETTINGS, type SttConfig} from '../src/types';
 
 const base: SttConfig = {
   kind: 'openai-compatible',
   preset: 'custom',
+  mode: 'upload',
+  live: {...DEFAULT_SETTINGS.stt.live},
   baseUrl: 'https://example.com/v1',
   apiKey: 'k',
   model: 'whisper-1',

@@ -1,4 +1,9 @@
 # Self-hosted transcription for OpenType (optional, no account needed)
+#
+# - `whisper`: OpenAI-compatible HTTP upload endpoint (POST /v1/audio/transcriptions)
+# - `whisper-live`: WebSocket live transcription for the app's ⚡ Live mode.
+#   In the app pick provider "WhisperLive self-host" and enter this machine's
+#   LAN IP with port 9090 (plain ws; no key needed on a trusted network).
 services:
   whisper:
     # Any faster-whisper image exposing POST /v1/audio/transcriptions works.
@@ -10,6 +15,15 @@ services:
       WHISPER_LANGUAGE: auto
     volumes:
       - whisper-models:/var/lib/whisper
+    restart: unless-stopped
+
+  whisper-live:
+    # Live WebSocket transcription (ws://<host>:9090). Needs a GPU for
+    # comfort; CPU works for `tiny`/`base` models.
+    image: ghcr.io/collabora/whisperlive-cpu:latest
+    ports:
+      - "9090:9090"
+    command: ["python3", "run_server.py", "--port", "9090", "--backend", "faster_whisper"]
     restart: unless-stopped
 
 volumes:

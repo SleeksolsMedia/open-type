@@ -1,159 +1,236 @@
 import {Platform, useColorScheme} from 'react-native';
 
 /**
- * Calm Flow — Wispr Flow-inspired token system for OpenType.
+ * OpenType — editorial design system.
  *
- * Light = warm paper (Lumen Cream) + ink text + lavender CTA.
- * Dark  = ink chamber + cream text. Shadowless, border-driven.
- *
- * Custom fonts (EB Garamond / Figtree TTFs) can be dropped into
- * assets/fonts/ later — fontFamily constants below will pick them up
- * automatically. Until then they fall back to platform serif/sans,
- * which already gives the editorial feel.
+ * Source-of-truth = design-system.html. The look is a paper-and-ink
+ * newsroom: warm paper background, ink surface for the orb and text,
+ * coral as the "voice" accent, amber reserved for LLM enhance only,
+ * mono metadata for the developer texture.
  */
 
 export interface ThemeColors {
   dark: boolean;
-  bg: string;
-  card: string;
-  cardElevated: string;
+  bg: string;          // page surface
+  surface: string;     // raised cards / sheets
+  surfaceMuted: string;// subtle band / sheets on top of bg
+  ink: string;         // primary text + orb surface
+  inkSoft: string;     // secondary text on light, primary on dark
+  inkMid: string;      // tertiary text
+  inkLow: string;      // captions, mono eyebrow
+  line: string;        // hairline borders on paper
+  lineOnDark: string;  // hairline borders on ink
+  // Brand
+  coral: string;       // brand.voice
+  coralDark: string;
+  coralLight: string;
+  coralFaint: string;  // tinted backgrounds
+  amber: string;       // brand.ai
+  amberDark: string;
+  amberFaint: string;
+  // States
+  done: string;        // success check
+  err: string;         // error badge
+  errFaint: string;
+  // Tokens the legacy screens still read
+  primary: string;
+  primaryText: string;
+  success: string;
+  danger: string;
+  warnBg: string;
+  okBg: string;
+  errBg: string;
   text: string;
   subtext: string;
   border: string;
   inputBg: string;
-  primary: string;
-  primaryText: string;
-  danger: string;
-  success: string;
-  warnBg: string;
-  okBg: string;
-  errBg: string;
   bar: string;
   barBg: string;
-  // Calm Flow extensions
-  cream: string;
-  ink: string;
-  lavender: string;
-  lavenderInk: string;
-  forest: string;
-  forestInk: string;
-  ember: string;
-  stone: string;
-  fog: string;
-  overlay: string;
 }
 
 const light: ThemeColors = {
   dark: false,
-  bg: '#FFFFEB',
-  card: '#FFFDF4',
-  cardElevated: '#FFFFFF',
-  text: '#1A1A1A',
-  subtext: '#6E6E60',
-  border: '#1A1A1A',
+  bg: '#F4F1EA',          // paper
+  surface: '#FFFFFF',
+  surfaceMuted: '#ECE7DC', // paper-2
+  ink: '#1A1714',
+  inkSoft: '#3A342D',
+  inkMid: '#5C554B',
+  inkLow: '#9A9184',
+  line: '#D8D1C2',
+  lineOnDark: '#383129',
+  coral: '#E8552B',
+  coralDark: '#C43F1A',
+  coralLight: '#F27A54',
+  coralFaint: '#FBEAE3',
+  amber: '#F2B705',
+  amberDark: '#C99400',
+  amberFaint: '#FDF3D0',
+  done: '#0F8E7E',
+  err: '#D64524',
+  errFaint: '#FBE7E1',
+  primary: '#E8552B',
+  primaryText: '#FFFFFF',
+  success: '#0F8E7E',
+  danger: '#D64524',
+  warnBg: '#FDF3D0',
+  okBg: '#E6F4EF',
+  errBg: '#FBE7E1',
+  text: '#1A1714',
+  subtext: '#5C554B',
+  border: '#D8D1C2',
   inputBg: '#FFFFFF',
-  primary: '#F0D7FF',
-  primaryText: '#1A1A1A',
-  danger: '#C93A3A',
-  success: '#034F46',
-  warnBg: '#FFF3D1',
-  okBg: '#DFF2E5',
-  errBg: '#FBE0E0',
-  bar: '#034F46',
-  barBg: '#E4E4D0',
-  cream: '#FFFFEB',
-  ink: '#1A1A1A',
-  lavender: '#F0D7FF',
-  lavenderInk: '#1A1A1A',
-  forest: '#034F46',
-  forestInk: '#FFFFEB',
-  ember: '#FFA946',
-  stone: '#E4E4D0',
-  fog: '#8A8A80',
-  overlay: 'rgba(26, 26, 26, 0.45)',
+  bar: '#E8552B',
+  barBg: '#ECE7DC',
 };
 
 const dark: ThemeColors = {
   dark: true,
-  bg: '#1A1A1A',
-  card: '#222222',
-  cardElevated: '#2A2A28',
-  text: '#FFFFEB',
-  subtext: '#A8A89C',
-  border: '#3D3D34',
-  inputBg: '#141412',
-  primary: '#F0D7FF',
-  primaryText: '#1A1A1A',
-  danger: '#FF8A8A',
+  bg: '#161310',
+  surface: '#26221D',
+  surfaceMuted: '#1F1B17',
+  ink: '#EDE7DC',
+  inkSoft: '#D8D1C2',
+  inkMid: '#A8A89C',
+  inkLow: '#6E665A',
+  line: '#383129',
+  lineOnDark: '#4A443C',
+  coral: '#F27A54',
+  coralDark: '#E8552B',
+  coralLight: '#F9C4B2',
+  coralFaint: '#3A1D14',
+  amber: '#F2B705',
+  amberDark: '#C99400',
+  amberFaint: '#3A2F10',
+  done: '#3ED598',
+  err: '#FF8A6A',
+  errFaint: '#3D1A14',
+  primary: '#F27A54',
+  primaryText: '#161310',
   success: '#3ED598',
+  danger: '#FF8A6A',
   warnBg: '#3A2F10',
   okBg: '#0F3527',
-  errBg: '#3D1A1A',
-  bar: '#7FD8C4',
-  barBg: '#33332E',
-  cream: '#FFFFEB',
-  ink: '#1A1A1A',
-  lavender: '#F0D7FF',
-  lavenderInk: '#1A1A1A',
-  forest: '#7FD8C4',
-  forestInk: '#1A1A1A',
-  ember: '#FFA946',
-  stone: '#33332E',
-  fog: '#8A8A80',
-  overlay: 'rgba(0, 0, 0, 0.6)',
+  errBg: '#3D1A14',
+  text: '#EDE7DC',
+  subtext: '#A8A89C',
+  border: '#383129',
+  inputBg: '#1F1B17',
+  bar: '#F27A54',
+  barBg: '#26221D',
 };
 
-export const spacing = {xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32} as const;
-/** Border-driven radii: generous cards, pill badges, 12px controls. */
-export const radius = {sm: 12, md: 20, lg: 28, xl: 36, pill: 9999} as const;
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+  xxxl: 48,
+} as const;
+
+export const radius = {
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 22,
+  pill: 9999,
+} as const;
+
 export const fontSize = {
-  xs: 12,
+  xs: 11,
   sm: 13,
-  md: 16,
-  lg: 20,
-  xl: 26,
-  xxl: 34,
+  md: 15,
+  lg: 18,
+  xl: 24,
+  xxl: 32,
   display: 44,
 } as const;
 
 /**
- * Display = editorial serif (EB Garamond when bundled, else platform serif).
- * Body = geometric sans (Figtree when bundled, else system).
+ * Type system:
+ *  - Display: system bold, -2% tracking (replaces EB Garamond everywhere).
+ *  - Body:    system regular/semibold (replaces Figtree).
+ *  - Mono:    SF Mono on iOS, monospace on Android — for metadata, timers,
+ *    config, model names. The "developer texture" of the spec.
  */
 export const fonts = {
   display: Platform.select({
-    ios: 'Georgia',
-    android: 'serif',
-    default: 'serif',
+    ios: 'System',
+    android: 'sans-serif',
+    default: 'System',
   }) as string,
   body: Platform.select({
     ios: 'System',
     android: 'sans-serif',
     default: 'System',
   }) as string,
+  bodyMedium: Platform.select({
+    ios: 'System',
+    android: 'sans-serif-medium',
+    default: 'System',
+  }) as string,
+  bodySemiBold: Platform.select({
+    ios: 'System',
+    android: 'sans-serif-medium',
+    default: 'System',
+  }) as string,
+  bodyBold: Platform.select({
+    ios: 'System',
+    android: 'sans-serif',
+    default: 'sans-serif',
+  }) as string,
+  bodyExtraBold: Platform.select({
+    ios: 'System',
+    android: 'sans-serif-black',
+    default: 'sans-serif',
+  }) as string,
   mono: Platform.select({
     ios: 'Menlo',
     android: 'monospace',
     default: 'monospace',
   }) as string,
-  /** Use these names when you drop TTFs into assets/fonts/. */
-  customDisplay: 'EBGaramond',
-  customBody: 'Figtree',
 } as const;
 
-/** Shared motion language: calm springs, short fades, staggered reveals. */
+/**
+ * Motion language from the design system:
+ *   - micro 120ms: press feedback
+ *   - small 200ms: fades, input focus
+ *   - medium 320ms: panel slides
+ *   - Orb snap: damping 15, stiffness 180
+ *   - Grow on record: scale 1 → 1.1, 180ms
+ *   - Ring pulse: 1.6s ease-out loop
+ *   - Shrink to dot: 220ms after 5000ms idle
+ */
 export const motion = {
-  staggerMs: 70,
-  fadeMs: 260,
+  micro: 120,
+  small: 200,
+  medium: 320,
+  pressScale: 0.97,
+  staggerMs: 60,
+  fadeMs: 220,
+  orbSnap: {damping: 15, stiffness: 180} as const,
   spring: {damping: 22, stiffness: 190} as const,
   gentleSpring: {damping: 26, stiffness: 140} as const,
 } as const;
 
-/** Theme for the current system scheme. No hardcoded colors in screens. */
 export function useTheme(): ThemeColors {
   return useColorScheme() === 'dark' ? dark : light;
 }
 
 export function themeFor(scheme: 'light' | 'dark'): ThemeColors {
   return scheme === 'dark' ? dark : light;
+}
+
+/**
+ * Resolves a theme for a given mode override. 'system' falls back to the
+ * platform colorScheme. Used by App.tsx to apply settings.themeMode.
+ */
+export function useThemedColors(
+  mode: 'system' | 'light' | 'dark',
+): ThemeColors {
+  const system = useColorScheme();
+  const resolved = mode === 'system' ? system : mode;
+  return resolved === 'dark' ? dark : light;
 }

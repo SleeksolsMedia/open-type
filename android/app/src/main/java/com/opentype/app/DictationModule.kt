@@ -107,7 +107,59 @@ class DictationModule(private val appContext: ReactApplicationContext) :
   private val recordListener = object : RecordingController.Listener {
     override fun onAutoStop(path: String) {
       RecordingController.noteFinished(appContext)
+      RecordingController.setFrameListener(null)
       emit("RecordingAutoStopped", path)
+    }
+  }
+
+  private val frameForwarder = object : RecordingController.FrameListener {
+    override fun onFrame(base64Pcm16Mono: String) {
+      emit("AudioFrame", base64Pcm16Mono)
+    }
+  }
+
+  /** Live PCM frames for streaming transcription. File recording continues. */
+  @ReactMethod
+  fun setFrameStreaming(enabled: Boolean, promise: Promise) {
+    try {
+      RecordingController.setFrameListener(if (enabled) frameForwarder else null)
+      promise.resolve(null)
+    } catch (e: Exception) {
+      promise.reject("STREAM_ERROR", e.message, e)
+    }
+  }
+
+  /**
+   * Bounded frame queue for headless consumers (bubble live flow).
+   * Enable before recording, drain after stop, disable when done.
+   */
+  @ReactMethod
+  fun setQueueFrames(enabled: Boolean, promise: Promise) {
+    try {
+      RecordingController.setQueueFrames(enabled)
+      promise.resolve(null)
+    } catch (e: Exception) {
+      promise.reject("STREAM_ERROR", e.message, e)
+    }
+  }
+
+  @ReactMethod
+  fun drainAudioFrames(promise: Promise) {
+    try {
+      val arr = Arguments.createArray()
+      RecordingController.drainQueuedFrames().forEach { arr.pushString(it) }
+      promise.resolve(arr)
+    } catch (e: Exception) {
+      promise.reject("STREAM_ERROR", e.message, e)
+    }
+  }
+
+  @ReactMethod
+  fun consumeDroppedFrames(promise: Promise) {
+    try {
+      promise.resolve(RecordingController.consumeDroppedFrames())
+    } catch (e: Exception) {
+      promise.reject("STREAM_ERROR", e.message, e)
     }
   }
 
@@ -131,6 +183,7 @@ class DictationModule(private val appContext: ReactApplicationContext) :
   fun stopRecording(promise: Promise) {
     try {
       val path = RecordingController.stop()
+      RecordingController.setFrameListener(null)
       RecordingController.noteFinished(appContext)
       promise.resolve(path)
     } catch (e: RecordingException) {
@@ -145,6 +198,7 @@ class DictationModule(private val appContext: ReactApplicationContext) :
   fun cancelRecording(promise: Promise) {
     try {
       RecordingController.cancel()
+      RecordingController.setFrameListener(null)
       RecordingController.noteFinished(appContext)
       promise.resolve(null)
     } catch (e: Exception) {

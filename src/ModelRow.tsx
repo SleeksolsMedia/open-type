@@ -1,6 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Text, View} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {log} from './logging';
 import {
   MODEL_CATALOG,
@@ -9,8 +8,8 @@ import {
   isModelDownloaded,
 } from './providers/models';
 import {releaseOnDevice} from './providers/stt';
-import {Banner, Btn, Pill, ProgressBar, Row, formatMB} from './ui';
-import {useTheme} from './theme';
+import {AppIcon, Banner, Btn, ConfirmSheet, Pill, ProgressBar, Row, formatMB} from './ui';
+import {fonts, useTheme} from './theme';
 
 type RowState =
   | {kind: 'checking'}
@@ -34,6 +33,7 @@ export function ModelRow({
   const t = useTheme();
   const model = MODEL_CATALOG.find(m => m.id === modelId);
   const [state, setState] = useState<RowState>({kind: 'checking'});
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const handle = useRef<{cancel: () => void} | null>(null);
   const mounted = useRef(true);
 
@@ -89,6 +89,9 @@ export function ModelRow({
         handle.current = null;
         log('info', 'models', `Ready: ${model.id}`);
         refresh();
+        // Auto-select the finished model so verification (Continue) fires
+        // immediately — the user must never tap a second row to proceed.
+        onSelect(model.id);
       },
       (e: unknown) => {
         handle.current = null;
@@ -115,14 +118,14 @@ export function ModelRow({
       style={{
         borderWidth: selected ? 2 : 1.5,
         borderColor: selected
-          ? t.lavender
+          ? t.coral
           : t.dark
             ? t.border
-            : t.stone,
+            : t.line,
         borderRadius: 20,
         padding: 14,
         marginVertical: 6,
-        backgroundColor: selected ? t.lavender : t.card,
+        backgroundColor: selected ? 'rgba(232,85,43,0.08)' : t.surface,
       }}>
       <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
         <View
@@ -132,31 +135,32 @@ export function ModelRow({
             borderRadius: 21,
             backgroundColor:
               selected
-                ? t.lavenderInk
+                ? t.ink
                 : t.dark
-                  ? t.cardElevated
+                  ? t.surfaceMuted
                   : '#F2F2DF',
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          <Icon
+          <AppIcon
             name={selected ? 'check' : 'cellphone'}
             size={20}
-            color={selected ? t.lavender : t.text}
+            color={selected ? t.bg : t.ink}
           />
         </View>
         <View style={{flex: 1}}>
           <Text
             style={{
-              color: selected ? t.lavenderInk : t.text,
-              fontWeight: '800',
+              color: selected ? t.ink : t.text,
+              fontFamily: fonts.bodyBold,
               fontSize: 15,
             }}>
             {model.label}
           </Text>
           <Text
             style={{
-              color: selected ? t.lavenderInk : t.subtext,
+              color: selected ? t.ink : t.subtext,
+              fontFamily: fonts.body,
               fontSize: 12,
               marginTop: 2,
               opacity: selected ? 0.75 : 1,
@@ -170,7 +174,29 @@ export function ModelRow({
         />
       </View>
       {state.kind === 'checking' && (
-        <Text style={{color: selected ? t.lavenderInk : t.subtext, marginTop: 8}}>Checking…</Text>
+          <Text style={{color: selected ? t.ink : t.subtext, fontFamily: fonts.body, marginTop: 8}}>Checking…</Text>
+      )}
+      {state.kind === 'ready' && (
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8}}>
+          <AppIcon
+            name={state.downloaded ? 'check-circle' : 'download'}
+            size={16}
+            color={state.downloaded ? t.done : t.inkMid}
+          />
+          <Text
+            style={{
+              color: selected ? t.ink : t.subtext,
+              fontFamily: fonts.body,
+              fontSize: 12,
+              fontWeight: '700',
+            }}>
+            {state.downloaded
+              ? selected
+                ? 'Downloaded · selected — you can continue'
+                : 'Downloaded on this device'
+              : 'Not downloaded'}
+          </Text>
+        </View>
       )}
       {state.kind === 'ready' &&
         (state.downloaded ? (
@@ -178,7 +204,7 @@ export function ModelRow({
             {!selected && (
               <Btn title="Use this model" icon="check" kind="ghost" onPress={() => onSelect(model.id)} />
             )}
-            <Btn title="Delete" icon="delete" kind="danger" onPress={onDelete} />
+            <Btn title="Delete" icon="delete" kind="danger" onPress={() => setConfirmDelete(true)} />
           </Row>
         ) : (
           <Row>
@@ -188,9 +214,9 @@ export function ModelRow({
       {state.kind === 'downloading' && (
         <View style={{marginTop: 8}}>
           {!!state.status && (
-            <Text style={{color: selected ? t.lavenderInk : t.subtext, fontSize: 12}}>{state.status}</Text>
+            <Text style={{color: selected ? t.ink : t.subtext, fontFamily: fonts.body, fontSize: 12}}>{state.status}</Text>
           )}
-          <Text style={{color: selected ? t.lavenderInk : t.text, fontSize: 12, fontWeight: '600'}}>
+          <Text style={{color: selected ? t.ink : t.text, fontFamily: fonts.bodySemiBold, fontSize: 12}}>
             {formatMB(state.received * 1024 * 1024)} / {state.total.toFixed(0)} MB
           </Text>
           <ProgressBar fraction={state.total > 0 ? state.received / state.total : 0} />
@@ -213,6 +239,18 @@ export function ModelRow({
           </Row>
         </View>
       )}
+      <ConfirmSheet
+        visible={confirmDelete}
+        title={`Delete ${model.label}?`}
+        body={`This removes the ${model.sizeMB} MB download from this phone. You can download it again later.`}
+        confirmLabel="Delete model"
+        destructive
+        onConfirm={async () => {
+          setConfirmDelete(false);
+          await onDelete();
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </View>
   );
 }
